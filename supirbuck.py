@@ -18,25 +18,36 @@ def milliAmps(current):
 def microAmps(current):
     return current/1e6
 
-resList = resistors.findResistorStack(.262)
-#print( resList)
-#print(resistors.lowestResistance(resList))
-#print(resistors.largestResistance(resList))
-
-
-
-#print(resistors.chooseResistor(49899))
 
 def calcR1R2():
-    R2R1Ratio = Ven/(Vinmin - Ven)
-    possibleResistors = resistors.findResistorStack(R2R1Ratio)
-    return possibleResistors
+    R1R2Ratio = (Vinmin - Ven) / Ven
+    print(f'Ratio={R1R2Ratio}')
+    possibleResistors = resistors.findResistorStack(R1R2Ratio)
+    #print(possibleResistors)
+    errorMin = 1e9
 
-R1R2List = calcR1R2()
+    for resPair in possibleResistors:
+        r1r2tolerance = 1
+        R1 = resPair[0] / r1r2tolerance
+        R2 = resPair[1] * r1r2tolerance
+        IR2 = 1.2/R2
+        IR1 = IR2 + 0.000001
+        VR1 = IR1 * R1
+        enable = VR1 + Ven
+        #error = (1 - (enable/Vinmin)) * 100
+        error = abs(resPair[0]+resPair[1] - 49900 - 7500)
 
-for i in R1R2List:
-    enable = 9.2 / (i[0]+i[1]) * i[0]
-    print(f'R1={i[0]} R2={i[1]} Total={i[0]+i[1]} enable={enable}')
+        if error < errorMin:
+            errorMin = error
+            bestPair = resPair
+            bestEnable = enable
+    
+    print(f'R1={bestPair[0]} R2={bestPair[1]} Total={bestPair[1]+bestPair[0]} enable={bestEnable:.2f} ')
+
+    return bestPair
+
+R1R2 = calcR1R2()
+print(R1R2)
     
 
 #print(R1R2List)
