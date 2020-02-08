@@ -3,15 +3,20 @@ import math
 import resistors
 
 
-Vin = 12
-VinMax = 12
-VinMin = 12
+# Input Power Supply
+Vin = 20.0
+VinMax = 21.0
+VinMin = 19.0
 
+# Load Requiresments
+Vout = 1.2
 Iout = 12
 
-# lowest voltage where you can deliver the required power
-Vinmin = 15
-Vout = 1.2
+# This variable controls the under voltage lockout
+# choose the lowest number where the power from the supply > output power 
+# e.g power supply needs to be able to deliver  VenMin*I = Vout*Iout
+VenMin = 15
+
 vripple = Vout * 0.01
 fs = 600000
 Vref = 0.5
@@ -30,10 +35,8 @@ def calcVen(VR2,R1,R2,Ileak):
     VR1 = IR1 * R1
     return(VR1+VR2)
 
-#resList = [49900,7500]
-resList = resistors.resitorList
-
 def calcR1R2():
+    # These parameter are from the IR3894 Datasheet
     VenLow = 1.14
     VenHigh = 1.26
     VenNom = 1.2
@@ -44,21 +47,28 @@ def calcR1R2():
 
     bestError = None
 
-    for Res1 in resList:
-        for Res2 in resList:
-            VenableLow = calcVen(VenLow,Res1 * (1-resTolerance),Res2 * (1+resTolerance),IleakLow )
-            VenableHigh = calcVen(VenHigh,Res1 * (1+resTolerance),Res2 * (1-resTolerance),IleakHigh )
-            VenableNom = calcVen(VenNom,Res1,Res2,IleakNom)
-            VenError = VenableLow - Vinmin
+    for Res1 in resistors.resitorList:
+        for Res2 in resistors.resitorList:
+            VenActLow = calcVen(VenLow,Res1 * (1-resTolerance),Res2 * (1+resTolerance),IleakLow )
+            VenActHigh = calcVen(VenHigh,Res1 * (1+resTolerance),Res2 * (1-resTolerance),IleakHigh )
+            VenActNom = calcVen(VenNom,Res1,Res2,IleakNom)
+            VenError = VenActLow - VenMin
 
-            if ( (bestError == None or VenError<bestError) and VenError>0):
+            if ( (bestError == None or (VenError<bestError and VenActHigh<VinMin) ) and VenError>0):
                 bestError = VenError
-                bestList = (Res1,Res2,VenableLow,VenableNom,VenableHigh)
+                bestList = (Res1,Res2,VenActLow,VenActNom,VenActHigh)
+                R1 = Res1
+                R2 = Res2
+    return bestList
+      
+enableParams = calcR1R2()
+print(f'R1={enableParams[0]}')
+print(f'R2={enableParams[1]}')
+print(f'VenLow = {enableParams[2]:.2f}')
+print(f'VenNom = {enableParams[3]:.2f}')
+print(f'VenHigh = {enableParams[4]:.2f}')
 
-    print(f'BestList = {bestList}')
-         
 
-calcR1R2()
 
 
 '''
