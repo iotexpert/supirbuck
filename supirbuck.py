@@ -1,10 +1,11 @@
 
 import math
+
 import resistors
 
 
 # Input Power Supply
-Vin = 20.0
+Vin = 21.0
 VinMax = 21.0
 VinMin = 19.0
 
@@ -12,24 +13,21 @@ VinMin = 19.0
 Vout = 1.2
 Iout = 12
 
+# Oscilator Duty Cycle 
+D = Vout/Vin
+
 # This variable controls the under voltage lockout
 # choose the lowest number where the power from the supply > output power 
 # e.g power supply needs to be able to deliver  VenMin*I = Vout*Iout
 VenMin = 15
-
-vripple = Vout * 0.01
-fs = 600000
-Vref = 0.5
 Ven = 1.2
 
-def milliAmps(current):
-    return current/1000
 
-def microAmps(current):
-    return current/1e6
-
-
-
+#########################################################################################################
+#
+# Enabling the IR3894
+#
+#########################################################################################################
 def calcVen(VR2,R1,R2,Ileak):
     IR1 = VR2/R2 + Ileak
     VR1 = IR1 * R1
@@ -43,18 +41,18 @@ def calcR1R2():
     IleakLow = -0.000001
     IleakHigh = 0.000001
     IleakNom = 0
-    resTolerance = 0.01
+    pwrSupplyMargin = 0.01
 
     bestError = None
 
     for Res1 in resistors.resitorList:
         for Res2 in resistors.resitorList:
-            VenActLow = calcVen(VenLow,Res1 * (1-resTolerance),Res2 * (1+resTolerance),IleakLow )
-            VenActHigh = calcVen(VenHigh,Res1 * (1+resTolerance),Res2 * (1-resTolerance),IleakHigh )
+            VenActLow = calcVen(VenLow,Res1 * (1-resistors.resTolerance),Res2 * (1+resistors.resTolerance),IleakLow )
+            VenActHigh = calcVen(VenHigh,Res1 * (1+resistors.resTolerance),Res2 * (1-resistors.resTolerance),IleakHigh )
             VenActNom = calcVen(VenNom,Res1,Res2,IleakNom)
-            VenError = VenActLow - VenMin
+            VenError = VenActLow - (VenMin * (1+pwrSupplyMargin))
 
-            if ( (bestError == None or (VenError<bestError and VenActHigh<VinMin) ) and VenError>0):
+            if ( (bestError == None or (VenError<bestError and VenActHigh< (VinMin/(1+pwrSupplyMargin))    ) ) and VenError>0):
                 bestError = VenError
                 bestList = (Res1,Res2,VenActLow,VenActNom,VenActHigh)
                 R1 = Res1
@@ -69,20 +67,73 @@ print(f'VenNom = {enableParams[3]:.2f}')
 print(f'VenHigh = {enableParams[4]:.2f}')
 
 
+#########################################################################################################
+#
+# Programming the frequency
+#
+#########################################################################################################
+
+#
+#
+#
+#
+
+def calcRt():
+
+    #takes ohms ... return a tuple of low, nom, high khz
+    def calcFreq(Rt):
+        
+        # from the datasheet
+        oscAccuracy = .1
+
+        RtNom = Rt/1000
+        oscNom = 19954 * RtNom**(-0.953)
+
+        RtFast = RtNom * (1-resistors.resTolerance)   
+        oscFast = 19954 * RtFast**(-0.953)* (1+oscAccuracy)
+
+        RtSlow = RtNom / (1-resistors.resTolerance)
+        oscSlow = 19954 * RtSlow**(-0.953) /  (1+oscAccuracy)
+
+        return (oscSlow,oscNom,oscFast)
 
 
-'''
-phase_boost = 70
+    #test = calcFreq(80600)
+    #print(f'Rt=80.6K Freq = {test}')
 
-FZ2 = Fo*math.sqrt((1-math.sin(phase_boost)/(1+sin(phase_boost))))
+    # maximum frequency in kHz
+    FsMax = Vout / (Vin * 60e-9 ) / 1000
+
+    print(f'FsMax = {FsMax:.1f} kHz')
+
+    bestError = None
+    Rt = None
+
+    for res in resistors.resitorList:
+        FsCalc = calcFreq(res*(1-resistors.resTolerance))
+        error = FsMax - FsCalc[2]
+        if (bestError == None or error<bestError) and   error > 0 :
+            bestError = error
+            Rt = res
+            Fs = FsCalc
+            D=
+
+    print(f'bestError = {bestError} Rt = {Rt} Fs={Fs}')
 
 
-FZ1 = 0.5*FZ2
-FP3 = 0.5*Fs
+calcRt()
 
-c4 = 2.2nf
+#########################################################################################################
+#
+# Programming the frequency
+#
+#########################################################################################################
 
-r4 = (1/2*math.pi*c4*fp2)
-r5 = 1/(2*math.pi*c4*fz2)
-r6 = Vref / (Vout - Vref)
-'''
+
+
+def milliAmps(current):
+    return current/1000
+
+def microAmps(current):
+    return current/1e6
+

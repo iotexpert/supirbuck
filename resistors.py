@@ -51,6 +51,7 @@ In stock
 1%
 1/10 watt
 '''
+resTolerance = 0.01
 
 resitorList = [
 2.2*1000*1000,
