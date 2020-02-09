@@ -83,7 +83,7 @@ def calcRt():
     #takes ohms ... return a tuple of low, nom, high khz
     def calcFreq(Rt):
         
-        # from the datasheet
+        # From the datasheet the Oscillator will be with +-10%
         oscAccuracy = .1
 
         RtNom = Rt/1000
@@ -116,9 +116,10 @@ def calcRt():
             bestError = error
             Rt = res
             Fs = FsCalc
-            D=
+            D = Vout/Vin
 
     print(f'bestError = {bestError} Rt = {Rt} Fs={Fs}')
+    return (Rt,Fs,D)
 
 
 calcRt()
