@@ -2,25 +2,50 @@
 import math
 
 import resistors
-
+import inductors
 
 # Input Power Supply
-Vin = 21.0
+Vin = 20
 VinMax = 21.0
 VinMin = 19.0
 
 # Load Requiresments
-Vout = 1.2
+Vout = 5.0
 Iout = 12
 
-# Oscilator Duty Cycle 
-D = Vout/Vin
+
 
 # This variable controls the under voltage lockout
 # choose the lowest number where the power from the supply > output power 
 # e.g power supply needs to be able to deliver  VenMin*I = Vout*Iout
-VenMin = 15
+VenMin = 0.7 * Vin
+
 Ven = 1.2
+
+#########################################################################################################
+Cin=None
+C1=None
+C5=None
+C6=None
+Cref=None
+C4=None
+C2=None
+Co=None
+Cvcc=None
+Lo=None
+R3=None
+R5=None
+R7=None
+R6=None
+R8=None
+
+R4=None
+Rt=None
+R1=None
+Rpg=None
+R2=None
+
+
 
 
 #########################################################################################################
@@ -116,20 +141,121 @@ def calcRt():
             bestError = error
             Rt = res
             Fs = FsCalc
-            D = Vout/Vin
+#            D = Vout/Vin
 
     print(f'bestError = {bestError} Rt = {Rt} Fs={Fs}')
-    return (Rt,Fs,D)
+    return (Rt,Fs)
 
 
-calcRt()
+fVal = calcRt()
+Rt = fVal[0]
+Fs = fVal[1][2]*1000
+
 
 #########################################################################################################
 #
-# Programming the frequency
+# Bootstrap Capacitor Selection
 #
 #########################################################################################################
 
+
+C1 = 0.000001
+
+
+#########################################################################################################
+#
+# Input Capacitor Selection
+#
+# C1
+#
+#########################################################################################################
+
+D = Vout/Vin
+Irms = Iout * (D * (1-D))**0.5
+
+print(f'D={D:0.2f} Irms={Irms:0.2f}A')
+
+
+#########################################################################################################
+#
+# Inductor Selection
+#
+#########################################################################################################
+
+
+#Fs = 600000
+deltai = 0.3 * Iout
+Lo = (Vin-Vout) * Vout / (Vin * deltai * Fs) 
+print(f'Fs = {Fs} Vin={Vin} Vout={Vout} deltai={deltai}')
+
+print(f'Calc Lo={Lo*1e6:0.2f} uH')
+
+Lo = inductors.chooseInductor(Lo)
+print(f'Found Lo = {Lo[2]*1e6}uH')
+
+
+
+
+#########################################################################################################
+#
+# Output Capacitor Selection
+# Co C5
+#
+#########################################################################################################
+
+
+
+
+
+#########################################################################################################
+#
+# Feedback Compensation
+#
+# R3, R4, R5, R6 
+# C2, C3, C4
+#########################################################################################################
+
+
+
+#########################################################################################################
+#
+# Vref Bypass Capacitor
+# Cref
+#
+#########################################################################################################
+
+
+#########################################################################################################
+#
+# Print Results
+# 
+#
+#########################################################################################################')
+print('')
+print('')
+print('')
+print('#########################################################################################################')
+
+print(f'Cin={Cin}')
+print(f'C1={C1}')
+print(f'C5={C5}')
+print(f'C6={C6}')
+print(f'Cref={Cref}')
+print(f'C4={C4}')
+print(f'C2={C2}')
+print(f'Co={Co}')
+print(f'Cvcc={Cvcc}')
+print(f'Lo={Lo}')
+print(f'R3={R3}')
+print(f'R5={R5}')
+print(f'R7={R7}')
+print(f'R6={R6}')
+print(f'R8={R8}')
+print(f'R4={R4}')
+print(f'Rt={Rt}')
+print(f'R1={R1}')
+print(f'Rpg={Rpg}')
+print(f'R2={R2}')
 
 
 def milliAmps(current):
